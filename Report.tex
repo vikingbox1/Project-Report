@@ -1,0 +1,310 @@
+% Author: Joseph Rowell
+% Version: 3.0
+% This work is licensed under a Creative Commons Attribution 4.0 International License.
+\documentclass[12pt, a4paper]{report}
+\usepackage[a4paper, total={6.25in, 8.25in}]{geometry} %%%%%% CHECK MARGIN REQ. 8.25 in?
+\usepackage{caption}
+\usepackage{pdfpages}
+\usepackage{braket}
+\usepackage{amsmath}
+\usepackage{tikz-cd}
+\usepackage{amscd}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\input{Packages.tex}
+\usepackage{multicol}
+\newtheorem{theorem}{Theorem}
+\hypersetup{pdftitle = Project Report, pdfauthor = {First Last}, pdfstartview=FitH, pdfkeywords = essay, pdfpagemode = FullScreen, colorlinks, anchorcolor = black, citecolor = blue, urlcolor = blue, filecolor = green, linkcolor = blue, plainpages = false}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{fancy}
+\rhead{}
+\chead{}
+\lhead{University College London}
+\lfoot{\date{}}
+\cfoot{}
+\rfoot{\thepage}
+% Top and Bottom Line Rules
+
+\renewcommand{\headrulewidth}{0.4pt} %0.4pt
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyheadoffset{8pt}
+\fancyfootoffset{8pt}
+% Line spacing
+\renewcommand{\baselinestretch}{1.5} %1.5
+
+\input{Glossary}
+
+\date{March 2025}
+
+\title{Optimising Logical Clifford Gates in Stabiliser Codes via Evolutionary Search}
+\author{\\ \Large{John Painuvila}
+\\ Supervisors: Professor Dan Browne and Dr Mark Webster
+\\ Faculty of Mathematical and Physical Sciences
+\\ Department of Physics and Astronomy
+\\ 
+\\
+\\ University College London
+\\
+A Project Report Presented in Partial Fulfillment of the Degree \\ \textit{MSci Natural Sciences}
+\\
+\textit{Physics and Mathematics and Statistics}
+\\ \\
+% \\Disclaimer:This report is submitted as part requirement for the MSc in Robotics  and Computation at University College London. It is substantially the result of my own work except where explicitly indicated in the text.The report may be freely copied and distributed provided the source is explicitly acknowledged.
+% September 2022
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%Adjust logo positions here
+% \AddToShipoutPicture*{\parbox[t][\paperheight][t]{\paperwidth}{%
+%           \includegraphics[width=\paperwidth]{\BackgroundPicturea{Logos/ucl_long%_logo.png}{3in}{3in}}
+%           }}
+% \AddToShipoutPicture*{\centering\BackgroundPictureb{Logos/Bentham2011_065_c623d.jpg}{3in}{3.7in}}
+\AddToShipoutPictureBG*{%
+  \AtPageUpperLeft{%
+    \raisebox{-\height}{%
+      \includegraphics[width=\paperwidth]{Logos/UCL page header.png}%
+    }}
+}
+\AddToShipoutPicture*{%
+      \parbox[t][\paperheight][t]{\paperwidth}{%
+          \includegraphics[width=1.2\paperwidth]{Logos/UCL page footer.png}
+      }}
+      
+
+\thispagestyle{headings}
+\maketitle
+\FloatBarrier
+\pagenumbering{roman}
+
+
+\thispagestyle{empty}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\linewidth]{Screenshot 2025-04-01 at 16.30.45.png}
+\end{figure}
+
+
+\thispagestyle{empty}
+\begin{abstract}
+\input{0 Abstract}
+
+% \vspace{-10mm} %To remove added white space after
+\end{abstract}
+
+
+
+
+
+\tableofcontents
+
+\thispagestyle{plain}
+\listoffigures
+\listoftables
+%\lstlistoflistings
+\listofalgorithms
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{1 Introduction and Background}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{2 Methodology}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{3 Results and Analysis}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{4 Discussion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{5 Conclusion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\bibname}{References}
+\bibliographystyle{ieeetr}
+%\bibliography{Bibliography.bib}
+\bibliography{references.bib}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+\begin{appendices}
+\chapter{Source Code} \label{Appendix A}
+Source code for all of the methods implemented in Chap. \ref{Chap3} for the project can be found in the GitHub repository: \newline \url{link}. \newline \\
+Project files can be found on Google Drive \url{link}
+
+\chapter{Transvection decomposition} \label{Appendix B}
+The Decomposition algorithm used is outlined as follows directly from the paper, Minimizing the Number of Two-qubit Gates in Clifford Circuits, by Kalle Volanto \cite{volanto2023minimizing}.
+
+The algorithm begins by ensuring that the 2×2 block corresponding to the current qubit index on the matrix diagonal is invertible. If this is not the case, it searches for another row further down with an invertible block and swaps it into position. These swaps are considered cost-free due to the assumption that qubit relabeling is allowed.
+
+Next, the algorithm eliminates any interfering entries in the current matrix column that originate from other rows. If there are multiple rows with non-zero, invertible sub-blocks in the same column, it constructs and applies appropriate two-qubit transvections to reduce redundancy. These operations simplify the structure by collapsing multiple interfering terms into a more manageable form.
+
+After this, the algorithm scans for remaining non-zero entries in the current column, particularly those of rank one. For each such entry, it again constructs and applies a two-qubit transvection that zeroes out the unwanted term. This step ensures that the only non-zero contribution in the column comes from the diagonal block.
+
+Finally, if the diagonal block is still not the identity matrix, the algorithm performs Gaussian elimination using one-qubit Clifford gates. These operations are applied to bring the block into standard form without incurring additional significant cost.
+
+By the end of the iteration for each qubit, the symplectic matrix has been progressively simplified, and the sequence of operations required to implement the corresponding Clifford operator has been constructed. This method is particularly effective for small to medium-sized systems and offers a more direct alternative to traditional decomposition strategies, which often fragment the matrix into multiple subcomponents and lead to inefficient gate usage.
+
+The algorithm below was directly taken from paper \cite{volanto2023minimizing} and displays the steps mentioned above in pseudo code.
+
+\begin{algorithm}
+\caption{Two-Qubit Transvection Decomposition Algorithm}
+\label{alg:two_qubit_transvection}
+\begin{algorithmic}[1]
+\Require Symplectic matrix $F \in \text{Sp}(n, \mathbb{F}_2)$
+\Ensure Sequence of SWAP gates, two-qubit transvections, and one-qubit transvections implementing $F$
+\State sequence $\gets$ [\ ]
+\For{$i \gets 1$ to $n$}
+    \If{$R_F(i,i)$ is not invertible}
+        \State Find $k > i$ such that $R_F(k,k)$ is invertible
+        \State $F \gets \text{SWAP}_{i,k} \cdot F$
+        \State sequence $\gets$ [SWAP$_{i,k}$] $\cup$ sequence
+    \EndIf
+    \While{there exist $j, k \neq i$ with invertible $R_F(j,i)$ and $R_F(k,i)$}
+        \State Choose $c = F_{n+k,i}$ and $d = F_{k,i}$
+        \State Choose $a$ and $b$ such that $[a,b] R_F(j,i) + [c,d] R_F(k,i) = [1,0]$
+        \State $v = [a e_j + c e_k, b e_j + d e_k]$
+        \State $F \gets T_v \cdot F$
+        \State sequence $\gets$ [T$_v$] $\cup$ sequence
+    \EndWhile
+    \For{$k \gets i+1$ to $n$}
+        \If{$\text{rank}(R_F(k,i)) = 1$}
+            \State Choose $a,b,c,d$ such that $[d,c]^T [a,b] R_F(i,i) = R_F(k,i)$
+            \State $v = [a e_i + c e_k, b e_i + d e_k]$
+            \State $F \gets T_v \cdot F$
+            \State sequence $\gets$ [T$_v$] $\cup$ sequence
+        \EndIf
+    \EndFor
+    \While{$R_F(i,i) \neq I_2$}
+        \State Choose a one-qubit transvection $T_v$ to perform Gaussian elimination on $R_F(i,i)$
+        \State $F \gets T_v \cdot F$
+        \State sequence $\gets$ [T$_v$] $\cup$ sequence
+    \EndWhile
+\EndFor
+\State \Return sequence
+\end{algorithmic}
+\end{algorithm}
+
+
+\chapter{Toric Code} \label{Appendix C}
+The Toric code is defined on a square lattice with qubits placed on the edges, and periodic boundary conditions applied to form a torus. The code is characterised by two types of stabiliser generators: star operators \(A_s\)  and plaquette operators \(B_p\) as shown in Figure \ref{fig:[[8,2,2]] Toric code}. Each star operator acts as a tensor product of Pauli \(X\) operators on the four edges incident to a vertex \cite{bombin2013introduction}, i.e.,
+
+\begin{equation}
+    A_s=\Pi_{i\in s}X_i,
+\end{equation}
+
+while each plaquette operator is a product of Pauli \(Z\) operators around a face (plaquette), i.e., 
+
+\begin{equation}
+    B_p=\Pi_{i\in p}Z_i.
+\end{equation}
+
+The stabilisers define a code space as the simultaneous +1 eigenspace of all \(A_s\) and \(B_p\), enforcing constraints that detect both bit-flip and phase-flip errors. Because the stabilisers are local and commute, the code can be measured and corrected using only nearest-neighbour interactions, making it particularly appealing for physical realisation on planar architectures.
+
+What makes the Toric code particularly attractive is its topological nature: logical qubits are encoded non-locally via operators that span the non-contractible loops of the torus. This non-local encoding grants the code inherent resilience against local noise, as local errors cannot easily accumulate to form logical errors unless they span the entire code distance \cite{eczoo_toric}. As a result, the Toric code achieves a high degree of fault tolerance with relatively low-weight stabilisers and minimal overhead.
+
+Furthermore, the geometric regularity of the lattice and the reliance solely on nearest-neighbour interactions make the Toric code a natural fit for implementation on two-dimensional quantum hardware. It serves as a foundational example in the study of topological quantum computation and has inspired numerous extensions, including surface codes and color codes, which further generalize its principles to more practical, boundary-limited architectures.
+
+\chapter{Symplectic Logical Operator matrices for the Toric code} \label{Appendix D}
+The following matrices are the symplectic representations of the logical Clifford operators discussed in \ref{Chap3}. These matrices can be decomposed into 2-qubit transvection, SWAPs, and single qubit Cliffords using the transDecomp function found in the source code.
+
+
+\begin{equation}
+\label{mat:Logical S}
+\bar{S}=
+    \begin{bmatrix}
+    1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 1 & 1 & 1 \\
+    0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 1 \\
+    0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+    \end{bmatrix}
+\end{equation}
+
+\begin{equation}
+\label{mat:Logical H}
+\bar{H}=
+    \begin{bmatrix}
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+    0 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 1 & 1 \\
+    0 & 0 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+    0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+    \end{bmatrix}
+\end{equation}
+
+\begin{equation}
+\label{mat:Logical CZ}
+\bar{CZ}=
+    \begin{bmatrix}
+    1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+    0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 1 \\
+    0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 \\
+    1 & 1 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0
+    \end{bmatrix}
+\end{equation}
+
+\begin{equation}
+\label{mat:Logical CNOT}
+\bar{CNOT}=
+    \begin{bmatrix}
+    0 & 1 & 0 & 1 & 1 & 1 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 0 & 1 \\
+    0 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 1 & 1 \\
+    0 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
+    \end{bmatrix}
+\end{equation}
+
+
+
+\end{appendices}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GLOSSARY
+\clearpage
+\printglossaries
+
+% INDEX?
+
+\end{document}
